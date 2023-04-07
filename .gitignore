@@ -1,0 +1,25 @@
+# dependencies
+/node_modules
+db.sqlite
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+**/.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# compile logs
+npm-debug.log*
+
+# runtime logs
+nohup.out
+**/nohup.out
+

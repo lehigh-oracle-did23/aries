@@ -1,0 +1,47 @@
+default:
+  # The name of this agent instance
+  agent_name: MyAgent
+
+  # The endpoint of the agent's web server
+  endpoint: http://localhost:8080
+
+  # The public DID of the agent
+  public_did: DID:example:123456789abcdefghi
+
+  # The seed used to generate the agent's DID
+  seed: my_seed_value
+
+  # The verkey for the agent's DID
+  verkey: my_verkey_value
+
+  # The endpoint for the agent's message handler
+  message_handler: http://localhost:5000
+
+  # The wallet configuration for the agent
+  wallet_config:
+    id: my_wallet_id
+    storage_type: default
+
+  # The wallet credentials for the agent
+  wallet_credentials:
+    key: my_wallet_key
+
+  # The mediator configuration for the agent
+  mediator_config:
+    id: mediator_agent
+    endpoint: http://localhost:8000
+    key: mediator_key
+
+  # The ledger configuration for the agent
+  ledger_config:
+    pool_name: test_pool
+    genesis_txn_path: path/to/genesis/txn
+
+  # The plugin configuration for the agent
+  plugin_config:
+    plugin_name:
+      plugin_setting_1: value_1
+      plugin_setting_2: value_2
+
+  # The debug mode for the agent
+  debug: False
