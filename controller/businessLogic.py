@@ -3,12 +3,12 @@ from aiohttp import ClientSession
 from aries_cloudagent.core import AriesAgentController
 
 """
-The CoreCapabilities class defines methods for each of the core capabilities listed earlier. The handle_message method is called whenever a new message is received by the agent, and the other methods handle various aspects of managing DIDs, exchanging credentials, and ensuring security and privacy.
+The Controller class defines methods for each of the core capabilities listed earlier. The handle_message method is called whenever a new message is received by the agent, and the other methods handle various aspects of managing DIDs, exchanging credentials, and ensuring security and privacy.
 
 The main method registers the handle_message method as a callback with the agent controller, and then enters a loop that sleeps for 60 seconds before repeating. This loop is necessary to keep the agent running and able to receive messages and respond to requests.
 """
 
-class CoreCapabilities:
+class Controller:
     def __init__(self, agent_controller: AriesAgentController):
         self.agent_controller = agent_controller
 
@@ -100,3 +100,11 @@ class CoreCapabilities:
             # Loop forever
             while True:
                 await asyncio.sleep(60)
+
+    if __name__ == "__main__":
+        # Create an agent controller
+        agent_controller = AriesAgentController("http://localhost:3000", "admin", "admin")
+
+        # Create a controller object and run the main loop
+        controller = Controller(agent_controller)
+        asyncio.get_event_loop().run_until_complete(controller.main())
