@@ -1,0 +1,3 @@
+# Holder Core
+
+The HolderCoreHandler class implements the core capabilities of an Aries Cloud Agent for the holder agent. It includes methods to send credential proposal, offer, issue, and acknowledgement messages to a connection, as well as handlers for receiving credential request and credential messages. The process_credential_request and process_credential methods are not shown, but they would handle the actual processing of these messages based on the specific use case of the agent.
