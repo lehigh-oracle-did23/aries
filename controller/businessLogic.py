@@ -101,10 +101,10 @@ class Controller:
             while True:
                 await asyncio.sleep(60)
 
-    if __name__ == "__main__":
-        # Create an agent controller
-        agent_controller = AriesAgentController("http://localhost:3000", "admin", "admin")
+if __name__ == "__main__":
+    # Create an agent controller
+    agent_controller = AriesAgentController("http://localhost:3000", "admin", "admin")
 
-        # Create a controller object and run the main loop
-        controller = Controller(agent_controller)
-        asyncio.get_event_loop().run_until_complete(controller.main())
+    # Create a controller object and run the main loop
+    controller = Controller(agent_controller)
+    asyncio.get_event_loop().run_until_complete(controller.main())
