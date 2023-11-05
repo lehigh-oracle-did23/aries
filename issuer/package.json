@@ -1,0 +1,21 @@
+{
+  "name": "issuer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aries-framework/askar": "^0.4.0",
+    "@aries-framework/core": "^0.4.0",
+    "@aries-framework/node": "^0.4.0",
+    "@ariesframework/oracle": "./src/services/oracle",
+    "@hyperledger/aries-askar-nodejs": "^0.1.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1"
+  }
+}
