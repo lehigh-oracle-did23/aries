@@ -137,7 +137,7 @@ const setupConnectionListener = (
         // Custom business logic can be included here
         // In this example we can send a basic message to the connection, but
         // anything is possible
-        cb();
+        cb(payload.connectionRecord.id);
 
         // // We exit the flow
         // process.exit(0);
@@ -185,23 +185,23 @@ const run = async () => {
   console.log("Listening for connection changes...");
   // Create a Promise to resolve when the connection is established
   const connectionEstablished = new Promise<void>((resolve) => {
-    setupConnectionListener(issuer, outOfBandRecord, () => {
+    setupConnectionListener(issuer, outOfBandRecord, (connectionID) => {
       console.log(
         "We now have an active connection to use in the following tutorials"
       );
-      resolve(); // Resolve the Promise when the connection is established
+      resolve(connectionID); // Resolve the Promise when the connection is established
     });
   });
 
   // Wait for the connection to be established
-  await connectionEstablished;
+  const connectionID = await connectionEstablished;
 
-  console.log(outOfBandRecord.state);
+  console.log(connectionID);
 
   const jsonldCredentialExchangeRecord =
     await issuer.credentials.offerCredential({
       protocolVersion: "v2",
-      connectionId: outOfBandRecord.id,
+      connectionId: `${connectionID}`,
       credentialFormats: {
         jsonld: {
           credential: {
