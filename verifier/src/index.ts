@@ -17,8 +17,6 @@ import {
   CredentialStateChangedEvent,
   CredentialEventTypes,
   CredentialState,
-  ProofsModule,
-  V2ProofProtocol,
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -34,17 +32,17 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-const initializeIssuerAgent = async () => {
+const initializeVerifierAgent = async () => {
   // Simple agent configuration. This sets some basic fields like the wallet
   // configuration and the label. It also sets the mediator invitation url,
   // because this is most likely required in a mobile environment.
   const config: InitConfig = {
-    label: "demo-agent-issuer",
+    label: "demo-agent-verifier",
     walletConfig: {
-      id: "mainIssuer",
-      key: "demoagentissuer00000000000000000000",
+      id: "mainVerifier",
+      key: "demoagentverifier00000000000000000000",
     },
-    endpoints: ["http://localhost:3002"],
+    endpoints: ["http://localhost:3003"],
   };
 
   // A new instance of an agent is created here
@@ -88,7 +86,7 @@ const initializeIssuerAgent = async () => {
   issuer.registerOutboundTransport(new HttpOutboundTransport());
 
   // Register a simple `Http` inbound transport
-  issuer.registerInboundTransport(new HttpInboundTransport({ port: 3002 }));
+  issuer.registerInboundTransport(new HttpInboundTransport({ port: 3003 }));
 
   // Initialize the agent
   await issuer.initialize();
@@ -177,10 +175,10 @@ const setupCredentialListener = (
 
 const run = async () => {
   console.log("Initializing Issuer agent...");
-  const issuer = await initializeIssuerAgent();
+  const verifier = await initializeVerifierAgent();
 
   console.log("Creating the invitation as Issuer...");
-  const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
+  const { outOfBandRecord, invitationUrl } = await createNewInvitation(verifier);
 
   console.log("Invitation URL:");
   console.log(invitationUrl);
@@ -188,7 +186,7 @@ const run = async () => {
   console.log("Listening for connection changes...");
   // Create a Promise to resolve when the connection is established
   const connectionEstablished = new Promise<void>((resolve) => {
-    setupConnectionListener(issuer, outOfBandRecord, (connectionID) => {
+    setupConnectionListener(verifier, outOfBandRecord, (connectionID) => {
       console.log(
         "We now have an active connection to use in the following tutorials"
       );
@@ -201,39 +199,6 @@ const run = async () => {
 
   console.log(connectionID);
 
-  const jsonldCredentialExchangeRecord =
-    await issuer.credentials.offerCredential({
-      protocolVersion: "v2",
-      connectionId: `${connectionID}`,
-      credentialFormats: {
-        jsonld: {
-          credential: {
-            "@context": [
-              "https://www.w3.org/2018/credentials/v1",
-              "https://www.w3.org/2018/credentials/examples/v1",
-            ],
-            id: "urn:uuid:3978344f-8596-4c3a-a978-8fcaba3903c5",
-            type: ["VerifiableCredential", "UniversityDegreeCredential"],
-            issuer: "did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr",
-            issuanceDate: "2020-01-01T19:23:24Z",
-            expirationDate: "2021-01-01T19:23:24Z",
-            credentialSubject: {
-              id: "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
-              degree: {
-                type: "BachelorDegree",
-                name: "Bachelor of Science and Arts",
-              },
-            },
-          },
-          options: {
-            proofPurpose: "assertionMethod",
-            proofType: "Ed25519Signature2018",
-          },
-        },
-      },
-    });
-
-    
 };
 
 export default run;
