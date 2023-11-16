@@ -19,10 +19,16 @@ import {
   CredentialState,
   ProofsModule,
   V2ProofProtocol,
+  KeyType,
+  KeyDidCreateOptions,
+  Key,
+  Ed25119Sig2018,
+  Buffer,
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
 import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
+import crypto from "crypto";
 
 import {
   OracleModule,
@@ -30,8 +36,10 @@ import {
   OracleLedgerService,
   OracleDidResolver,
   OracleDidRegistrar,
+  OracleDidCreateOptions,
 } from "./services/oracle/src";
 import dotenv from "dotenv";
+import { MultiBaseEncoder } from "@aries-framework/core/build/utils";
 dotenv.config();
 
 const initializeIssuerAgent = async () => {
@@ -77,6 +85,8 @@ const initializeIssuerAgent = async () => {
           }),
         ],
       }),
+      w3cCredentials: new W3cCredentialsModule(),
+      proofs: new ProofsModule(),
     },
     dependencies: agentDependencies,
   });
@@ -174,10 +184,79 @@ const setupCredentialListener = (
   );
 };
 
+const generateKey = async () => {
+  const keypair = crypto.generateKeyPairSync("ed25519", {
+    publicKeyEncoding: {
+      type: "spki",
+      format: "pem",
+    },
+    privateKeyEncoding: {
+      type: "pkcs8",
+      format: "der",
+    },
+  });
+
+  return keypair;
+};
+
+// determine the length of a DER-encoded ASN.1 element
+function findDer(data: Uint8Array, index: number, tagByte: number) {
+    while (true) {
+        if (data.length < 2)
+            throw Error('unexpected EOF')
+        const [ tag, length ] = data
+        data = data.subarray(2)
+        if ((tag & 31) === 31 || length >> 7)
+            throw Error('not implemented')
+        if (data.length < length)
+            throw Error('unexpected EOF')
+        if (index-- === 0) {
+            if (tag !== tagByte) throw Error(`unexpected tag ${tag}`)
+            return data.subarray(0, length)
+        }
+        data = data.subarray(length)
+    }
+}
+
 
 const run = async () => {
   console.log("Initializing Issuer agent...");
   const issuer = await initializeIssuerAgent();
+
+  const keypair = await generateKey();
+  // console.log(keypair.publicKey);
+  // print in DER format;
+
+  // remove the ASN.1 wrapper from the private key and extract the raw key
+  let rawKey = Buffer.from(keypair.privateKey);
+  rawKey = Buffer.from(findDer(rawKey, 0, (1 << 5) | 16)); // SEQUENCE (PrivateKeyInfo)
+  rawKey = Buffer.from(findDer(rawKey, 2, 4)); // OCTET STRING (PrivateKey)
+  rawKey = Buffer.from(findDer(rawKey, 0, 4)); // OCTET STRING (CurvePrivateKey)
+
+  const key = await issuer.wallet.createKey({
+    privateKey: rawKey,
+    keyType: KeyType.Ed25519,
+  });
+
+  // console.log(key.publicKey);
+
+  const publicDid = await issuer.dids.create<OracleDidCreateOptions>({
+    method: "orcl",
+    secret: {
+      verificationMethod: {
+        id: "key-1",
+        type: "Ed25519VerificationKey2020",
+        controller: "#id",
+        publicKeyPem: keypair.publicKey,
+        publicKeyMultibase: key.fingerprint,
+      },
+    },
+  });
+
+  console.log("Issuer DID:");
+  console.log(publicDid);
+
+    process.exit(0);
 
   console.log("Creating the invitation as Issuer...");
   const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
@@ -232,8 +311,6 @@ const run = async () => {
         },
       },
     });
-
-    
 };
 
 export default run;

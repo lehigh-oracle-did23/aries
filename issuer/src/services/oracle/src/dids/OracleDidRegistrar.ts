@@ -46,8 +46,14 @@ export class OracleDidRegistrar implements DidRegistrar {
         didDocument = options.didDocument;
       } else if (verificationMethod) {
         const key = getKeyFromVerificationMethod(verificationMethod);
+        // console.log(key.publicKey.toString());
+        const l_publicKeyPem = verificationMethod.publicKeyPem?.toString()
 
-        didDocument = await oracleLedgerService.create(key.publicKey.toString());
+        if (!l_publicKeyPem) {
+          throw new Error("Public key PEM is undefined");
+        }
+
+        didDocument = await oracleLedgerService.create(l_publicKeyPem);
 
         const contextMapping = {
           Ed25519VerificationKey2018:
