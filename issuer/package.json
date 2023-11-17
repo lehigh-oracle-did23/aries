@@ -10,9 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aries-framework/askar": "^0.4.0",
-    "@aries-framework/core": "^0.4.0",
+    "@aries-framework/askar": "^0.4.2",
+    "@aries-framework/core": "^0.4.2",
     "@aries-framework/node": "^0.4.0",
+    "@aries-framework/sd-jwt-vc": "^0.5.0-alpha.59",
     "@ariesframework/oracle": "./src/services/oracle",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
     "axios": "^1.6.0",

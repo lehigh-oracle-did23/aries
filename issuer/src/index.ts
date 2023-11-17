@@ -29,6 +29,7 @@ import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
 import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
 import crypto from "crypto";
+import { SdJwtVcModule } from "@aries-framework/sd-jwt-vc";
 
 import {
   OracleModule,
@@ -60,6 +61,7 @@ const initializeIssuerAgent = async () => {
   const issuer = new Agent({
     config,
     modules: {
+      sdJwtVc: new SdJwtVcModule(),
       askar: new AskarModule({ ariesAskar }),
       connections: new ConnectionsModule({ autoAcceptConnections: true }),
       dids: new DidsModule({
@@ -256,7 +258,7 @@ const run = async () => {
   console.log("Issuer DID:");
   console.log(publicDid);
 
-    process.exit(0);
+  process.exit(0);
 
   console.log("Creating the invitation as Issuer...");
   const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
@@ -280,37 +282,37 @@ const run = async () => {
 
   console.log(connectionID);
 
-  const jsonldCredentialExchangeRecord =
-    await issuer.credentials.offerCredential({
-      protocolVersion: "v2",
-      connectionId: `${connectionID}`,
-      credentialFormats: {
-        jsonld: {
-          credential: {
-            "@context": [
-              "https://www.w3.org/2018/credentials/v1",
-              "https://www.w3.org/2018/credentials/examples/v1",
-            ],
-            id: "urn:uuid:3978344f-8596-4c3a-a978-8fcaba3903c5",
-            type: ["VerifiableCredential", "UniversityDegreeCredential"],
-            issuer: "did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr",
-            issuanceDate: "2020-01-01T19:23:24Z",
-            expirationDate: "2021-01-01T19:23:24Z",
-            credentialSubject: {
-              id: "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
-              degree: {
-                type: "BachelorDegree",
-                name: "Bachelor of Science and Arts",
-              },
-            },
-          },
-          options: {
-            proofPurpose: "assertionMethod",
-            proofType: "Ed25519Signature2018",
-          },
-        },
-      },
-    });
+  // const jsonldCredentialExchangeRecord =
+  //   await issuer.credentials.offerCredential({
+  //     protocolVersion: "v2",
+  //     connectionId: `${connectionID}`,
+  //     credentialFormats: {
+  //       jsonld: {
+  //         credential: {
+  //           "@context": [
+  //             "https://www.w3.org/2018/credentials/v1",
+  //             "https://www.w3.org/2018/credentials/examples/v1",
+  //           ],
+  //           id: "urn:uuid:3978344f-8596-4c3a-a978-8fcaba3903c5",
+  //           type: ["VerifiableCredential", "UniversityDegreeCredential"],
+  //           issuer: "did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr",
+  //           issuanceDate: "2020-01-01T19:23:24Z",
+  //           expirationDate: "2021-01-01T19:23:24Z",
+  //           credentialSubject: {
+  //             id: "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+  //             degree: {
+  //               type: "BachelorDegree",
+  //               name: "Bachelor of Science and Arts",
+  //             },
+  //           },
+  //         },
+  //         options: {
+  //           proofPurpose: "assertionMethod",
+  //           proofType: "Ed25519Signature2018",
+  //         },
+  //       },
+  //     },
+  //   });
 };
 
 export default run;
