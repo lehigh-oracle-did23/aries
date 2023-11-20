@@ -159,12 +159,18 @@ const setupCredentialListener = (agent: Agent, cb: (...args: any) => void) => {
           await agent.credentials.acceptOffer({
             credentialRecordId: payload.credentialRecord.id,
           });
+        case CredentialState.CredentialReceived:
+          console.log("credential received");
+          // custom logic here
+          await agent.credentials.acceptCredential({
+            credentialRecordId: payload.credentialRecord.id,
+          });
         case CredentialState.Done:
           console.log(
             `Credential for credential id ${payload.credentialRecord.id} is accepted`
           );
           // For demo purposes we exit the program here.
-          process.exit(0);
+          // process.exit(0);
       }
     }
   );

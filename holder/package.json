@@ -4,6 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "yarn run build && node ./build/index.js",
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

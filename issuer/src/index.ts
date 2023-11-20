@@ -29,6 +29,7 @@ import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
 import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
 import crypto from "crypto";
+import * as jwt from "jsonwebtoken";
 
 import {
   OracleModule,
@@ -173,12 +174,18 @@ const setupCredentialListener = (
           await agent.credentials.acceptOffer({
             credentialRecordId: payload.credentialRecord.id,
           });
+        case CredentialState.RequestReceived:
+          console.log("received a credential request");
+          // custom logic here
+          await agent.credentials.acceptRequest({
+            credentialRecordId: payload.credentialRecord.id,
+          });
         case CredentialState.Done:
           console.log(
             `Credential for credential id ${payload.credentialRecord.id} is accepted`
           );
           // For demo purposes we exit the program here.
-          process.exit(0);
+          // process.exit(0);
       }
     }
   );
@@ -197,6 +204,17 @@ const generateKey = async () => {
   });
 
   return keypair;
+};
+
+const privateKeyToJWK = (privateKey: Buffer): jwt.Secret => {
+  const jwk: unknown = {
+    kty: "oct",
+    k: privateKey.toString("base64"),
+    alg: "EdDSA",
+    use: "sig",
+  };
+
+  return jwk as jwt.Secret;
 };
 
 // determine the length of a DER-encoded ASN.1 element
@@ -238,6 +256,10 @@ const run = async () => {
     keyType: KeyType.Ed25519,
   });
 
+  const privateKeyJWK = privateKeyToJWK(Buffer.from(keypair.privateKey));
+
+  console.log(privateKeyJWK);
+
   // console.log(key.publicKey);
 
   const publicDid = await issuer.dids.create<OracleDidCreateOptions>({
@@ -255,8 +277,10 @@ const run = async () => {
 
   console.log("Issuer DID:");
   console.log(publicDid);
+  console.log("Issuer DID Document:");
+  console.log(JSON.stringify(publicDid.didState.didDocument, null, 2));
 
-    process.exit(0);
+  // process.exit(0);
 
   console.log("Creating the invitation as Issuer...");
   const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
@@ -311,6 +335,15 @@ const run = async () => {
         },
       },
     });
+
+  console.log("Credential offer sent");
+
+  console.log("Listening for credential changes...");
+  setupCredentialListener(issuer, () =>
+    console.log(
+      "We now have an active credential to use in the following tutorials"
+    )
+  );
 };
 
 export default run;

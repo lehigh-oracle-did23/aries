@@ -4,6 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "yarn run build && node ./build/index.js",
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,7 +19,12 @@
     "@aries-framework/node": "^0.4.0",
     "@ariesframework/oracle": "./src/services/oracle",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
+    "@types/node": "^20.9.2",
     "axios": "^1.6.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5"
   }
 }
