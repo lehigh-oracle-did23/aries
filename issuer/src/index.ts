@@ -271,6 +271,7 @@ const run = async () => {
         controller: "#id",
         publicKeyPem: keypair.publicKey,
         publicKeyMultibase: key.fingerprint,
+        // publicKeyBase58: key.publicKeyBase58,
       },
     },
   });
