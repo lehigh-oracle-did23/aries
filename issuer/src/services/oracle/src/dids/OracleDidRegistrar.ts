@@ -38,36 +38,38 @@ export class OracleDidRegistrar implements DidRegistrar {
 
     const oracleLedgerService = agentContext.dependencyManager.resolve(OracleLedgerService);
 
-    const verificationMethod = options.secret?.verificationMethod;
+    // const verificationMethod = options.secret?.verificationMethod;
+
+    const publicKeyPem = options.secret?.publicKeyPem;
     let didDocument: DidDocument;
 
     try {
       if (options.didDocument) {
         didDocument = options.didDocument;
-      } else if (verificationMethod) {
-        const key = getKeyFromVerificationMethod(verificationMethod);
-        // console.log(key.publicKey.toString());
-        const l_publicKeyPem = verificationMethod.publicKeyPem?.toString()
+      } 
+      // else if (verificationMethod) {
+      //   const key = getKeyFromVerificationMethod(verificationMethod);
+      //   // console.log(key.publicKey.toString());
+      //   const l_publicKeyPem = verificationMethod.publicKeyPem?.toString()
 
-        if (!l_publicKeyPem) {
-          throw new Error("Public key PEM is undefined");
-        }
+      //   if (!l_publicKeyPem) {
+      //     throw new Error("Public key PEM is undefined");
+      //   }
 
-        didDocument = await oracleLedgerService.create(l_publicKeyPem);
+      //   didDocument = await oracleLedgerService.create(l_publicKeyPem);
 
-        const contextMapping = {
-          Ed25519VerificationKey2018:
-            "https://w3id.org/security/suites/ed25519-2018/v1",
-          Ed25519VerificationKey2020:
-            "https://w3id.org/security/suites/ed25519-2020/v1",
-          JsonWebKey2020: "https://w3id.org/security/suites/jws-2020/v1",
-        };
-        const contextUrl = contextMapping[verificationMethod.type as keyof typeof contextMapping];
+      //   const contextMapping = {
+      //     Ed25519VerificationKey2018:
+      //       "https://w3id.org/security/suites/ed25519-2018/v1",
+      //     Ed25519VerificationKey2020:
+      //       "https://w3id.org/security/suites/ed25519-2020/v1",
+      //     JsonWebKey2020: "https://w3id.org/security/suites/jws-2020/v1",
+      //   };
+      //   const contextUrl = contextMapping[verificationMethod.type as keyof typeof contextMapping];
+      // } 
+      else if (publicKeyPem) {
+        didDocument = await oracleLedgerService.create(publicKeyPem);
 
-        // Add the context to the did document
-        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while AFJ did doc uses https://w3id.org/did/v1
-        // We should align these at some point. For now we just return a consistent value.
-        didDocument.context = ["https://www.w3.org/ns/did/v1", contextUrl];
       } else {
         return {
           didDocumentMetadata: {},
@@ -87,6 +89,12 @@ export class OracleDidRegistrar implements DidRegistrar {
         didDocument,
       });
       await didRepository.save(agentContext, didRecord);
+
+      // options.secret.verificationMethod = {
+      //   id: "key-1",
+      //   type: "Ed25519VerificationKey2020",
+      //   controller: "#id",
+      // };
 
       return {
         didDocumentMetadata: {},
@@ -253,6 +261,7 @@ export interface OracleDidCreateOptions extends DidCreateOptions {
   method: "orcl";
   secret: {
     verificationMethod?: VerificationMethod;
+    publicKeyPem?: string;
   };
 }
 

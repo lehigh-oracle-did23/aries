@@ -21,6 +21,7 @@
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
     "@types/node": "^20.9.2",
     "axios": "^1.6.0",
+    "bs58": "^5.0.0",
     "dotenv": "^16.3.1",
     "jsonwebtoken": "^9.0.2"
   },

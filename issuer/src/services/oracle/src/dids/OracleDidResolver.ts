@@ -13,29 +13,31 @@ export class OracleDidResolver implements DidResolver {
     try {
       const parsedDid = parseOracleDid(parsed.didUrl);
       if (!parsedDid) {
-        throw new Error('Invalid DID')
+        throw new Error('OracleDIDResolver Parse Error: Invalid DID')
       }
 
-      switch (did) {
-        case did.match(orclIdentifierRegex)?.input:
-          return await this.resolveDidDoc(agentContext, parsedDid.did);
-        default:
-          return {
-            didDocument: null,
-            didDocumentMetadata,
-            didResolutionMetadata: {
-              error: "Invalid request",
-              message: `Unsupported did Url: '${did}'`,
-            },
-          };
-      }
+      return await this.resolveDidDoc(agentContext, parsedDid.did);
+
+      // switch (did) {
+      //   case did.match(orclIdentifierRegex)?.input: // Why are we doing this twice?
+      //     return await this.resolveDidDoc(agentContext, parsedDid.did);
+      //   default:
+      //     return {
+      //       didDocument: null,
+      //       didDocumentMetadata,
+      //       didResolutionMetadata: {
+      //         error: "Invalid request",
+      //         message: `Unsupported did Url: '${did}'`,
+      //       },
+      //     };
+      // }
     } catch (error) {
       return {
         didDocument: null,
         didDocumentMetadata,
         didResolutionMetadata: {
           error: 'notFound',
-          message: `resolver_error: Unable to resolve did '${did}': ${error}`,
+          message: `OracleDIDResolver resolver_error: Unable to resolve did '${did}': ${error}`,
         },
       }
     }
@@ -45,11 +47,11 @@ export class OracleDidResolver implements DidResolver {
     
     const oracleLedgerService = agentContext.dependencyManager.resolve(OracleLedgerService);
 
-    const { didDocument, didDocumentMetadata } = await oracleLedgerService.resolve(did);
+    const didDocument = await oracleLedgerService.resolve(did);
 
     return {
       didDocument: JsonTransformer.fromJSON(didDocument, DidDocument),
-      didDocumentMetadata,
+      didDocumentMetadata: {},
       didResolutionMetadata: {},
     }
   }
