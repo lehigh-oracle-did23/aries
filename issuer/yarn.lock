@@ -60,13 +60,6 @@
     ref-napi "^3.0.3"
     ws "^8.13.0"
 
-"@ariesframework/oracle@./src/services/oracle":
-  version "1.0.0"
-  dependencies:
-    "@aries-framework/core" "^0.4.2"
-    axios "^1.6.0"
-    tsyringe "^4.8.0"
-
 "@digitalbazaar/security-context@^1.0.0":
   version "1.0.1"
   resolved "https://registry.npmjs.org/@digitalbazaar/security-context/-/security-context-1.0.1.tgz"

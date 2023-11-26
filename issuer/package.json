@@ -17,7 +17,6 @@
     "@aries-framework/askar": "^0.4.0",
     "@aries-framework/core": "^0.4.0",
     "@aries-framework/node": "^0.4.0",
-    "@ariesframework/oracle": "./src/services/oracle",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
     "@lehigh-oracle-did23/aries-framework-oracle": "1.0.0",
     "@types/node": "^20.9.2",
