@@ -148,6 +148,15 @@
   dependencies:
     fast-text-encoding "^1.0.3"
 
+"@lehigh-oracle-did23/aries-framework-oracle@1.0.0":
+  version "1.0.0"
+  resolved "https://npm.pkg.github.com/download/@lehigh-oracle-did23/aries-framework-oracle/1.0.0/186ff21f397be85a86b2911bca73979a7b22b8ab#186ff21f397be85a86b2911bca73979a7b22b8ab"
+  integrity sha512-r4gZ4WmUB5E90Npo1lsB0F3R1X7JHTmQNHuyhAu/oTlJZd6HG92VjXnM4FwyatVyrRlR3S7XCissHQdSBK4y9w==
+  dependencies:
+    "@aries-framework/core" "^0.4.2"
+    axios "^1.6.0"
+    tsyringe "^4.8.0"
+
 "@mapbox/node-pre-gyp@^1.0.10":
   version "1.0.11"
   resolved "https://registry.npmjs.org/@mapbox/node-pre-gyp/-/node-pre-gyp-1.0.11.tgz"

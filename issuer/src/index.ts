@@ -38,7 +38,7 @@ import {
   OracleDidResolver,
   OracleDidRegistrar,
   OracleDidCreateOptions,
-} from "./services/oracle/src";
+} from "@lehigh-oracle-did23/aries-framework-oracle";
 import dotenv from "dotenv";
 import { MultiBaseEncoder } from "@aries-framework/core/build/utils";
 dotenv.config();
