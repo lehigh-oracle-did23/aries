@@ -376,7 +376,7 @@ const run = async () => {
           },
           options: {
             proofPurpose: "assertionMethod",
-            proofType: "JsonWebKey2020",
+            proofType: "Ed25519Signature2018",
           },
         },
       },
