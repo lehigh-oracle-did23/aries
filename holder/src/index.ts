@@ -19,6 +19,7 @@ import {
   CredentialState,
   ConsoleLogger,
   LogLevel,
+  CredentialExchangeRecord
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -34,7 +35,7 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-const readline = require("readline");
+import readline from "readline";
 
 const initializeHolderAgent = async () => {
   // Simple agent configuration. This sets some basic fields like the wallet
@@ -190,11 +191,19 @@ const setupCredentialRequestListener = (agent: Agent, cb: (...args: any) => void
             `Credential for credential id ${payload.credentialRecord.id} is accepted`
           );
           // For demo purposes we exit the program here.
-          cb();
+          cb(payload.credentialRecord);
           break;
       }
     }
   );
+};
+
+const askQuestion = (rl: readline.Interface, question: string): Promise<string> => {
+  return new Promise((resolve) => {
+    rl.question(question, (answer: string) => {
+      resolve(answer);
+    });
+  });
 };
 
 const run = async () => {
@@ -206,9 +215,9 @@ const run = async () => {
     output: process.stdout,
   });
 
-  rl.question("Paste the invitation URL and press Enter: ", async (invitationUrl: string) => {
-    rl.close();
-
+  try {
+    // Issuer invitation
+    const invitationUrl = await askQuestion(rl, "Paste the invitation URL and press Enter: ");
     console.log("Accepting the invitation as Holder...");
     await receiveInvitation(holder, invitationUrl);
 
@@ -225,17 +234,31 @@ const run = async () => {
     await credentialOffer;
 
     console.log("Listening for credential changes...");
-    const credentialAccept = new Promise<void>((resolve) => {
-      setupCredentialRequestListener(holder, () => {
+    const credentialAccept = new Promise<CredentialExchangeRecord>((resolve) => {
+      setupCredentialRequestListener(holder, (credential) => {
         console.log(
           "We now have an active credential to use in the following tutorials"
         );
-        resolve();
+        resolve(credential);
       });
     });
 
-    await credentialAccept;
-  });
+    const credential = (await credentialAccept).credentials;
+
+    // Show all credentials
+    await holder.w3cCredentials.getCredentialRecordById(credential[0].credentialRecordId).then((records) => {
+      console.log(records);
+    });
+
+    // Verifier invitation
+    const secondInvitationUrl = await askQuestion(rl, "Paste the second invitation URL and press Enter: ");
+    console.log("Accepting the second invitation as Holder...");
+    await receiveInvitation(holder, secondInvitationUrl);
+
+    console.log("Listening for presentation changes...");
+  } finally {
+    rl.close();
+  }
 };
 
 export default run;
