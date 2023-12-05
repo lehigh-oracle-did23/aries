@@ -60,13 +60,6 @@
     ref-napi "^3.0.3"
     ws "^8.13.0"
 
-"@ariesframework/oracle@./src/services/oracle":
-  version "1.0.0"
-  dependencies:
-    "@aries-framework/core" "^0.4.2"
-    axios "^1.6.0"
-    tsyringe "^4.8.0"
-
 "@digitalbazaar/security-context@^1.0.0":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@digitalbazaar/security-context/-/security-context-1.0.1.tgz#badc4b8da03411a32d4e7321ce7c4b355776b410"
@@ -147,6 +140,15 @@
   integrity sha512-9jJSgqHt29JEuQ/tBzHmhWaSLyTyw/t7H+Ell/YSHtL9DE0KN0Ew/vuXoDqlt117+EBeQTDKG0hy0ov8K41rmw==
   dependencies:
     fast-text-encoding "^1.0.3"
+
+"@lehigh-oracle-did23/aries-framework-oracle@^1.0.3-alpha.0":
+  version "1.0.3-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@lehigh-oracle-did23/aries-framework-oracle/1.0.3-alpha.0/b1010f95b88df7710decfdaeb0793f7257d0b132#b1010f95b88df7710decfdaeb0793f7257d0b132"
+  integrity sha512-FwQesV0ZaqcfdLq0wzT1TXSzjqFHS75HP9EOMzEa5RwqzNfW5qkzWVkbB1LBn5rNTMGjcQiSxmaCXN0z48v1eg==
+  dependencies:
+    "@aries-framework/core" "^0.4.2"
+    axios "^1.6.0"
+    tsyringe "^4.8.0"
 
 "@mapbox/node-pre-gyp@^1.0.10":
   version "1.0.11"
