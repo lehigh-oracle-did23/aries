@@ -17,6 +17,8 @@ import {
   CredentialStateChangedEvent,
   CredentialEventTypes,
   CredentialState,
+  ConsoleLogger,
+  LogLevel,
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -44,6 +46,7 @@ const initializeHolderAgent = async () => {
       id: "mainHolder",
       key: "demoagentholder00000000000000000000",
     },
+    logger: new ConsoleLogger(LogLevel.info),
     endpoints: ["http://localhost:3001"],
   };
 
@@ -148,7 +151,7 @@ const setupConnectionListener = (
   );
 };
 
-const setupCredentialListener = (agent: Agent, cb: (...args: any) => void) => {
+const setupCredentialOfferListener = (agent: Agent, cb: (...args: any) => void) => {
   agent.events.on<CredentialStateChangedEvent>(
     CredentialEventTypes.CredentialStateChanged,
     async ({ payload }) => {
@@ -159,10 +162,27 @@ const setupCredentialListener = (agent: Agent, cb: (...args: any) => void) => {
           await agent.credentials.acceptOffer({
             credentialRecordId: payload.credentialRecord.id,
           });
+        case CredentialState.Done:
+          console.log(
+            `Credential for credential id ${payload.credentialRecord.id} is accepted`
+          );
+          // For demo purposes we exit the program here.
+          cb();
+          break;
+      }
+    }
+  );
+};
+
+const setupCredentialRequestListener = (agent: Agent, cb: (...args: any) => void) => {
+  agent.events.on<CredentialStateChangedEvent>(
+    CredentialEventTypes.CredentialStateChanged,
+    async ({ payload }) => {
+      switch (payload.credentialRecord.state) {
         case CredentialState.CredentialReceived:
-          console.log("credential received");
+          console.log("received a credential");
           // custom logic here
-          await agent.credentials.acceptCredential({
+          await agent.credentials.acceptOffer({
             credentialRecordId: payload.credentialRecord.id,
           });
         case CredentialState.Done:
@@ -170,7 +190,8 @@ const setupCredentialListener = (agent: Agent, cb: (...args: any) => void) => {
             `Credential for credential id ${payload.credentialRecord.id} is accepted`
           );
           // For demo purposes we exit the program here.
-          process.exit(0);
+          cb();
+          break;
       }
     }
   );
@@ -192,11 +213,28 @@ const run = async () => {
     await receiveInvitation(holder, invitationUrl);
 
     console.log("Listening for credential changes...");
-    setupCredentialListener(holder, () =>
-      console.log(
-        "We now have an active credential to use in the following tutorials"
-      )
-    );
+    const credentialOffer = new Promise<void>((resolve) => {
+      setupCredentialOfferListener(holder, () => {
+        console.log(
+          "We now have an active credential to use in the following tutorials"
+        );
+        resolve();
+      });
+    });
+
+    await credentialOffer;
+
+    console.log("Listening for credential changes...");
+    const credentialAccept = new Promise<void>((resolve) => {
+      setupCredentialRequestListener(holder, () => {
+        console.log(
+          "We now have an active credential to use in the following tutorials"
+        );
+        resolve();
+      });
+    });
+
+    await credentialAccept;
   });
 };
 

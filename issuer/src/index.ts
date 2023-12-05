@@ -25,6 +25,8 @@ import {
   Ed25119Sig2018,
   Buffer,
   ConnectionRecord,
+  ConsoleLogger,
+  LogLevel
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -40,6 +42,7 @@ import {
   OracleDidRegistrar,
   OracleDidCreateOptions,
 } from "@lehigh-oracle-did23/aries-framework-oracle";
+
 import dotenv from "dotenv";
 import { MultiBaseEncoder } from "@aries-framework/core/build/utils";
 dotenv.config();
@@ -56,6 +59,7 @@ const initializeIssuerAgent = async () => {
       id: "mainIssuer",
       key: "demoagentissuer00000000000000000000",
     },
+    logger: new ConsoleLogger(LogLevel.info),
     endpoints: ["http://localhost:3002"],
   };
 
@@ -171,12 +175,6 @@ const setupCredentialListener = (
     CredentialEventTypes.CredentialStateChanged,
     async ({ payload }) => {
       switch (payload.credentialRecord.state) {
-        case CredentialState.OfferReceived:
-          console.log("received a credential");
-          // custom logic here
-          await agent.credentials.acceptOffer({
-            credentialRecordId: payload.credentialRecord.id,
-          });
         case CredentialState.RequestReceived:
           console.log("received a credential request");
           // custom logic here
@@ -241,18 +239,23 @@ function findDer(data: Uint8Array, index: number, tagByte: number) {
 
 
 const run = async () => {
+  const logger = new ConsoleLogger(LogLevel.debug);
+
   console.log("Initializing Issuer agent...");
   const issuer = await initializeIssuerAgent();
-  // try {
-  const keypair = await generateKey();
-  // console.log(keypair.publicKey);
-  // print in DER format;
 
-  // remove the ASN.1 wrapper from the private key and extract the raw key
+  const keypair = await generateKey();
+
+  /**
+   * HACK - start: removes the ASN.1 wrapper from the private key and extract the raw key
+   */
   let kp_raw_privKey = Buffer.from(keypair.privateKey);
   kp_raw_privKey = Buffer.from(findDer(kp_raw_privKey, 0, (1 << 5) | 16)); // SEQUENCE (PrivateKeyInfo)
   kp_raw_privKey = Buffer.from(findDer(kp_raw_privKey, 2, 4)); // OCTET STRING (PrivateKey)
   kp_raw_privKey = Buffer.from(findDer(kp_raw_privKey, 0, 4)); // OCTET STRING (CurvePrivateKey)
+  /**
+   * end
+   */
 
   const key = await issuer.wallet.createKey({
     privateKey: kp_raw_privKey,
@@ -262,88 +265,50 @@ const run = async () => {
   const publicDid = await issuer.dids.create<OracleDidCreateOptions>({
     method: "orcl",
     secret: {
-      // verificationMethod: {
-      //   id: "key-1",
-      //   type: "Ed25519VerificationKey2020",
-      //   controller: "#id",
-      //   publicKeyPem: keypair.publicKey,
-      //   publicKeyMultibase: key.fingerprint,
-      //   // publicKeyBase58: key.publicKeyBase58,
-      // },
       publicKeyPem: keypair.publicKey,
     },
   });
 
-  console.log("Issuer DID:");
-  console.log(publicDid);
-  console.log("Issuer DID Document:");
-  console.log(JSON.stringify(publicDid.didState.didDocument, null, 2));
+  /**
+   * TEMP - start: logging
+   */
 
-  const stripped_publicKey = keypair.publicKey
-    .replace(/-----BEGIN [^\n]+-----/, "")
-    .replace(/-----END [^\n]+-----/, "");
+  // logger.debug("Issuer DID ", publicDid);
+  // logger.debug("Issuer DID Document ", publicDid.didState.didDocument);
 
-  console.log(stripped_publicKey + "\n");
+  // const stripped_publicKey = keypair.publicKey
+  //   .replace(/-----BEGIN [^\n]+-----/, "")
+  //   .replace(/-----END [^\n]+-----/, "");
 
-  const kp_der_publicKey = Buffer.from(stripped_publicKey, "base64");
-  const derData = crypto
-    .createPublicKey({
-      key: kp_der_publicKey.toString("utf8"), // Convert Buffer to string
-      format: "der",
-      type: "spki",
-    })
-    .export({ format: "der", type: "spki" });
+  // logger.debug("Stripped Public Key ", { publicKey: stripped_publicKey });
 
-  console.log(
-    kp_der_publicKey.toString("hex") +
-      " : Length : " +
-      kp_der_publicKey.length.toString()
-  );
+  // const kp_der_publicKey = Buffer.from(stripped_publicKey, "base64");
+  // const derData = crypto
+  //   .createPublicKey({
+  //     key: kp_der_publicKey.toString("utf8"), // Convert Buffer to string
+  //     format: "der",
+  //     type: "spki",
+  //   })
+  //   .export({ format: "der", type: "spki" });
 
-  console.log(
-    derData.toString("hex") + " : Length : " + derData.length.toString()
-  );
+  // logger.debug("DER Public Key ", { publicKey: kp_der_publicKey.toString("hex"), length: kp_der_publicKey.length.toString() });
+  // logger.debug("DER Public Key ", { publicKey: derData.toString("hex"), length: derData.length.toString() });
 
-  // should remove bs58 encoding later
-
-  const kp_b58_publicKey = bs58.encode(derData);
-  const kp_b58_privateKey = bs58.encode(kp_raw_privKey);
-  console.log("Keypair BS58");
-  console.log("Public Key: " + kp_b58_publicKey);
-  console.log("Private Key: " + kp_b58_privateKey + "\n");
-
-  console.log("Wallet BS58");
-  console.log("Public Key: " + key.publicKeyBase58);
-  console.log("Fingerprint Key: " + bs58.encode(Buffer.from(key.fingerprint)) + "\n");
-  console.log("Key: " + bs58.encode(key.publicKey) + "\n"
-              + bs58.encode(key.prefixedPublicKey) + "\n");
-
-  // if (
-  //   publicDid.didState &&
-  //   publicDid.didState.didDocument &&
-  //   publicDid.didState.didDocument.verificationMethod
-  // ) {
-  //   const xValues = publicDid.didState.didDocument.verificationMethod.map(
-  //     (verificationMethod) => verificationMethod.publicKeyJwk?.x // Add null check here
-  //   );
-  //   const xValuesString = xValues.join(""); // Join the array of strings into a single string
-  //   const xValuesBuffer = Buffer.from(xValuesString, "base64");
-  //   console.log("DID Public Key Base 58: " + bs58.encode(xValuesBuffer) + "\n");
-  // }
-
-  // console.log(publicDid.didState.didDocument?.verificationMethod);
-
-  const createdDids = await issuer.dids.getCreatedDids({
-    did: publicDid.didState.did
-  });
-  console.log("Created DIDs:");
-  console.log(createdDids[0].didDocument?.verificationMethod);
+  // // should remove bs58 encoding later
+  // const kp_b58_publicKey = bs58.encode(derData);
+  // const kp_b58_privateKey = bs58.encode(kp_raw_privKey);
+  // logger.debug("Keypair BS58", { publicKey: kp_b58_publicKey, privateKey: kp_b58_privateKey });
+  // logger.debug("Wallet BS58", { publicKey: key.publicKeyBase58, fingerprint: bs58.encode(Buffer.from(key.fingerprint)), key: bs58.encode(key.publicKey), prefixedKey: bs58.encode(key.prefixedPublicKey) });
+  
+  /**
+   * end
+   */
 
   console.log("Creating the invitation as Issuer...");
   const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
 
   console.log("Invitation URL:");
-  console.log(invitationUrl);
+  console.log("\x1b[34m%s\x1b[0m", invitationUrl); // print in blue color
 
   console.log("Listening for connection changes...");
   // Create a Promise to resolve when the connection is established
@@ -359,10 +324,8 @@ const run = async () => {
   // Wait for the connection to be established
   const connection = await connectionEstablished;
 
-  console.log("Connection ID:");
-
-  console.log(connection.id);
-  console.log(publicDid.didState);
+  logger.debug("Connection ID:", { connectionId: connection.id });
+  logger.debug("Connection DID:", { connectionDid: connection.did });
 
   const jsonldCredentialExchangeRecord =
     await issuer.credentials.offerCredential({

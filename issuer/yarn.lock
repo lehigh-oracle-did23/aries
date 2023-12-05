@@ -141,10 +141,10 @@
   dependencies:
     fast-text-encoding "^1.0.3"
 
-"@lehigh-oracle-did23/aries-framework-oracle@^1.0.2":
-  version "1.0.2"
-  resolved "https://npm.pkg.github.com/download/@lehigh-oracle-did23/aries-framework-oracle/1.0.2/fd3a1c103e5c8c79605e358abc544527c48f03a1#fd3a1c103e5c8c79605e358abc544527c48f03a1"
-  integrity sha512-FtUIPxOwToCiJnezW7405F+mPAV2XFi2WDlYd7xbL+7hhq3Z7vRDxK30YVpQ7K0xFASYmCWvwiNn3DN5S4/Lmw==
+"@lehigh-oracle-did23/aries-framework-oracle@^1.0.3-alpha.0":
+  version "1.0.3-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@lehigh-oracle-did23/aries-framework-oracle/1.0.3-alpha.0/b1010f95b88df7710decfdaeb0793f7257d0b132#b1010f95b88df7710decfdaeb0793f7257d0b132"
+  integrity sha512-FwQesV0ZaqcfdLq0wzT1TXSzjqFHS75HP9EOMzEa5RwqzNfW5qkzWVkbB1LBn5rNTMGjcQiSxmaCXN0z48v1eg==
   dependencies:
     "@aries-framework/core" "^0.4.2"
     axios "^1.6.0"
