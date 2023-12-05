@@ -30,7 +30,7 @@ import {
   OracleLedgerService,
   OracleDidResolver,
   OracleDidRegistrar,
-} from "./services/oracle/src";
+} from "@lehigh-oracle-did23/aries-framework-oracle";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -182,7 +182,7 @@ const setupCredentialRequestListener = (agent: Agent, cb: (...args: any) => void
         case CredentialState.CredentialReceived:
           console.log("received a credential");
           // custom logic here
-          await agent.credentials.acceptOffer({
+          await agent.credentials.acceptCredential({
             credentialRecordId: payload.credentialRecord.id,
           });
         case CredentialState.Done:
