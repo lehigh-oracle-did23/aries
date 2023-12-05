@@ -170,7 +170,7 @@ const setupCredentialListener = (agent: Agent, cb: (...args: any) => void) => {
             `Credential for credential id ${payload.credentialRecord.id} is accepted`
           );
           // For demo purposes we exit the program here.
-          // process.exit(0);
+          process.exit(0);
       }
     }
   );

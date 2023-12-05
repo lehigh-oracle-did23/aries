@@ -24,6 +24,7 @@ import {
   Key,
   Ed25119Sig2018,
   Buffer,
+  ConnectionRecord,
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -42,6 +43,8 @@ import {
 import dotenv from "dotenv";
 import { MultiBaseEncoder } from "@aries-framework/core/build/utils";
 dotenv.config();
+
+import { v4 as uuidv4} from "uuid";
 
 const initializeIssuerAgent = async () => {
   // Simple agent configuration. This sets some basic fields like the wallet
@@ -151,7 +154,7 @@ const setupConnectionListener = (
         // Custom business logic can be included here
         // In this example we can send a basic message to the connection, but
         // anything is possible
-        cb(payload.connectionRecord.id);
+        cb(payload.connectionRecord);
 
         // // We exit the flow
         // process.exit(0);
@@ -240,7 +243,7 @@ function findDer(data: Uint8Array, index: number, tagByte: number) {
 const run = async () => {
   console.log("Initializing Issuer agent...");
   const issuer = await initializeIssuerAgent();
-
+  // try {
   const keypair = await generateKey();
   // console.log(keypair.publicKey);
   // print in DER format;
@@ -315,18 +318,26 @@ const run = async () => {
   console.log("Key: " + bs58.encode(key.publicKey) + "\n"
               + bs58.encode(key.prefixedPublicKey) + "\n");
 
-  if (
-    publicDid.didState &&
-    publicDid.didState.didDocument &&
-    publicDid.didState.didDocument.verificationMethod
-  ) {
-    const xValues = publicDid.didState.didDocument.verificationMethod.map(
-      (verificationMethod) => verificationMethod.publicKeyJwk?.x // Add null check here
-    );
-    const xValuesString = xValues.join(""); // Join the array of strings into a single string
-    const xValuesBuffer = Buffer.from(xValuesString, "base64");
-    console.log("DID Public Key Base 58: " + bs58.encode(xValuesBuffer) + "\n");
-  }
+  // if (
+  //   publicDid.didState &&
+  //   publicDid.didState.didDocument &&
+  //   publicDid.didState.didDocument.verificationMethod
+  // ) {
+  //   const xValues = publicDid.didState.didDocument.verificationMethod.map(
+  //     (verificationMethod) => verificationMethod.publicKeyJwk?.x // Add null check here
+  //   );
+  //   const xValuesString = xValues.join(""); // Join the array of strings into a single string
+  //   const xValuesBuffer = Buffer.from(xValuesString, "base64");
+  //   console.log("DID Public Key Base 58: " + bs58.encode(xValuesBuffer) + "\n");
+  // }
+
+  // console.log(publicDid.didState.didDocument?.verificationMethod);
+
+  const createdDids = await issuer.dids.getCreatedDids({
+    did: publicDid.didState.did
+  });
+  console.log("Created DIDs:");
+  console.log(createdDids[0].didDocument?.verificationMethod);
 
   console.log("Creating the invitation as Issuer...");
   const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
@@ -336,24 +347,27 @@ const run = async () => {
 
   console.log("Listening for connection changes...");
   // Create a Promise to resolve when the connection is established
-  const connectionEstablished = new Promise<void>((resolve) => {
-    setupConnectionListener(issuer, outOfBandRecord, (connectionID) => {
+  const connectionEstablished = new Promise<ConnectionRecord>((resolve) => {
+    setupConnectionListener(issuer, outOfBandRecord, (connection) => {
       console.log(
         "We now have an active connection to use in the following tutorials"
       );
-      resolve(connectionID); // Resolve the Promise when the connection is established
+      resolve(connection); // Resolve the Promise when the connection is established
     });
   });
 
   // Wait for the connection to be established
-  const connectionID = await connectionEstablished;
+  const connection = await connectionEstablished;
 
-  console.log(connectionID);
+  console.log("Connection ID:");
+
+  console.log(connection.id);
+  console.log(publicDid.didState);
 
   const jsonldCredentialExchangeRecord =
     await issuer.credentials.offerCredential({
       protocolVersion: "v2",
-      connectionId: `${connectionID}`,
+      connectionId: `${connection.id}`,
       credentialFormats: {
         jsonld: {
           credential: {
@@ -361,13 +375,13 @@ const run = async () => {
               "https://www.w3.org/2018/credentials/v1",
               "https://www.w3.org/2018/credentials/examples/v1",
             ],
-            id: "urn:uuid:3978344f-8596-4c3a-a978-8fcaba3903c5",
+            id: "urn:oid:" + uuidv4(),
             type: ["VerifiableCredential", "UniversityDegreeCredential"],
-            issuer:  publicDid.didState.did as string,
+            issuer: publicDid.didState.did as string,
             issuanceDate: "2020-01-01T19:23:24Z",
             expirationDate: "2021-01-01T19:23:24Z",
             credentialSubject: {
-              id: "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+              id: connection.did as string,
               degree: {
                 type: "BachelorDegree",
                 name: "Bachelor of Science and Arts",
@@ -390,6 +404,10 @@ const run = async () => {
       "We now have an active credential to use in the following tutorials"
     )
   );
+  // } finally {
+  //   await issuer.wallet.delete()
+  //   process.exit(0);
+  // }
 };
 
 export default run;

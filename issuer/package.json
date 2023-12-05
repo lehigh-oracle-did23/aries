@@ -15,17 +15,20 @@
   "license": "ISC",
   "dependencies": {
     "@aries-framework/askar": "^0.4.0",
-    "@aries-framework/core": "^0.4.0",
+    "@aries-framework/core": "^0.4.2",
     "@aries-framework/node": "^0.4.0",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
-    "@lehigh-oracle-did23/aries-framework-oracle": "^1.0.0",
+    "@lehigh-oracle-did23/aries-framework-oracle": "^1.0.2",
     "@types/node": "^20.9.2",
     "axios": "^1.6.0",
     "bs58": "^5.0.0",
     "dotenv": "^16.3.1",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "tsyringe": "^4.8.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.5"
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/uuid": "^9.0.1"
   }
 }
