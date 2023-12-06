@@ -34,6 +34,10 @@ import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
 import crypto from "crypto";
 import * as bs58 from "bs58";
 
+import task from "./util/task";
+import prompt from "./util/prompt";
+import confirm from "./util/confirm";
+
 import {
   OracleModule,
   OracleModuleConfig,
@@ -59,7 +63,7 @@ const initializeIssuerAgent = async () => {
       id: "mainIssuer",
       key: "demoagentissuer00000000000000000000",
     },
-    logger: new ConsoleLogger(LogLevel.info),
+    // logger: new ConsoleLogger(LogLevel.info),
     endpoints: ["http://localhost:3002"],
   };
 
@@ -237,15 +241,7 @@ function findDer(data: Uint8Array, index: number, tagByte: number) {
     }
 }
 
-
-const run = async () => {
-  const logger = new ConsoleLogger(LogLevel.debug);
-
-  console.log("Initializing Issuer agent...");
-  const issuer = await initializeIssuerAgent();
-
-  const keypair = await generateKey();
-
+function stripKeyToRaw(keypair: crypto.KeyPairSyncResult<string, globalThis.Buffer>): Buffer {
   /**
    * HACK - start: removes the ASN.1 wrapper from the private key and extract the raw key
    */
@@ -256,18 +252,28 @@ const run = async () => {
   /**
    * end
    */
+  return kp_raw_privKey;
+}
 
-  const key = await issuer.wallet.createKey({
+const run = async () => {
+  // const logger = new ConsoleLogger(LogLevel.debug);
+
+  const issuer = await task("Initializing Issuer agent...", initializeIssuerAgent());
+
+  const keypair = await generateKey();
+  const kp_raw_privKey = stripKeyToRaw(keypair);
+
+  await task("Creating Issuer key...", issuer.wallet.createKey({
     privateKey: kp_raw_privKey,
     keyType: KeyType.Ed25519,
-  });
+  }));
 
-  const publicDid = await issuer.dids.create<OracleDidCreateOptions>({
+  const publicDid = await task("Creating Issuer DID...", issuer.dids.create<OracleDidCreateOptions>({
     method: "orcl",
     secret: {
       publicKeyPem: keypair.publicKey,
-    },
-  });
+      },
+  }));
 
   /**
    * TEMP - start: logging
@@ -304,8 +310,7 @@ const run = async () => {
    * end
    */
 
-  console.log("Creating the invitation as Issuer...");
-  const { outOfBandRecord, invitationUrl } = await createNewInvitation(issuer);
+  const { outOfBandRecord, invitationUrl } = await task("Creating invitation...", createNewInvitation(issuer));
 
   console.log("Invitation URL:");
   console.log("\x1b[34m%s\x1b[0m", invitationUrl); // print in blue color
@@ -322,10 +327,12 @@ const run = async () => {
   });
 
   // Wait for the connection to be established
-  const connection = await connectionEstablished;
+  const connection = await task("",connectionEstablished);
 
-  logger.debug("Connection ID:", { connectionId: connection.id });
-  logger.debug("Connection DID:", { connectionDid: connection.did });
+  // logger.debug("Connection ID:", { connectionId: connection.id });
+  // logger.debug("Connection DID:", { connectionDid: connection.did });
+
+  await confirm("Would you like to issue a credential?");
 
   const jsonldCredentialExchangeRecord =
     await issuer.credentials.offerCredential({
