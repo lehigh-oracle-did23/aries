@@ -26,7 +26,10 @@ import {
   Buffer,
   ConnectionRecord,
   ConsoleLogger,
-  LogLevel
+  LogLevel,
+  ProofStateChangedEvent,
+  ProofEventTypes,
+  ProofState
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -118,7 +121,7 @@ const initializeVerifierAgent = async () => {
   verifier.registerOutboundTransport(new HttpOutboundTransport());
 
   // Register a simple `Http` inbound transport
-  verifier.registerInboundTransport(new HttpInboundTransport({ port: 3002 }));
+  verifier.registerInboundTransport(new HttpInboundTransport({ port: 3003 }));
 
   // Initialize the agent
   await verifier.initialize();
@@ -179,26 +182,28 @@ const setupConnectionListener = (
   );
 };
 
-const setupCredentialListener = (
+const setupProofListener = (
   agent: Agent,
   cb: (...args: any) => void
 ) => {
-  agent.events.on<CredentialStateChangedEvent>(
-    CredentialEventTypes.CredentialStateChanged,
+  agent.events.on<ProofStateChangedEvent>(
+    ProofEventTypes.ProofStateChanged,
     async ({ payload }) => {
-      switch (payload.credentialRecord.state) {
-        case CredentialState.RequestReceived:
-          console.log("received a credential request");
+      switch (payload.proofRecord.state) {
+        case ProofState.ProposalReceived:
+          console.log("received a proof request");
           // custom logic here
-          await agent.credentials.acceptRequest({
-            credentialRecordId: payload.credentialRecord.id,
+          await agent.proofs.acceptProposal({
+            proofRecordId: payload.proofRecord.id,
           });
-        case CredentialState.Done:
+        case ProofState.Done:
           console.log(
-            `Credential for credential id ${payload.credentialRecord.id} is accepted`
+            `Proof for proof id ${payload.proofRecord.id} is accepted`
           );
           // For demo purposes we exit the program here.
           // process.exit(0);
+          cb();
+          break;
       }
     }
   );
@@ -268,55 +273,20 @@ const run = async () => {
 
   const verifier = await task("Initializing Verifier agent...", initializeVerifierAgent());
 
-  const keypair = await generateKey();
-  const kp_raw_privKey = stripKeyToRaw(keypair);
+  // const keypair = await generateKey();
+  // const kp_raw_privKey = stripKeyToRaw(keypair);
 
-  await task("Creating Verifier key...", verifier.wallet.createKey({
-    privateKey: kp_raw_privKey,
-    keyType: KeyType.Ed25519,
-  }));
+  // await task("Creating Verifier key...", verifier.wallet.createKey({
+  //   privateKey: kp_raw_privKey,
+  //   keyType: KeyType.Ed25519,
+  // }));
 
-  const publicDid = await task("Creating Verifier DID...", verifier.dids.create<OracleDidCreateOptions>({
-    method: "orcl",
-    secret: {
-      publicKeyPem: keypair.publicKey,
-      },
-  }));
-
-  /**
-   * TEMP - start: logging
-   */
-
-  // logger.debug("verifier DID ", publicDid);
-  // logger.debug("verifier DID Document ", publicDid.didState.didDocument);
-
-  // const stripped_publicKey = keypair.publicKey
-  //   .replace(/-----BEGIN [^\n]+-----/, "")
-  //   .replace(/-----END [^\n]+-----/, "");
-
-  // logger.debug("Stripped Public Key ", { publicKey: stripped_publicKey });
-
-  // const kp_der_publicKey = Buffer.from(stripped_publicKey, "base64");
-  // const derData = crypto
-  //   .createPublicKey({
-  //     key: kp_der_publicKey.toString("utf8"), // Convert Buffer to string
-  //     format: "der",
-  //     type: "spki",
-  //   })
-  //   .export({ format: "der", type: "spki" });
-
-  // logger.debug("DER Public Key ", { publicKey: kp_der_publicKey.toString("hex"), length: kp_der_publicKey.length.toString() });
-  // logger.debug("DER Public Key ", { publicKey: derData.toString("hex"), length: derData.length.toString() });
-
-  // // should remove bs58 encoding later
-  // const kp_b58_publicKey = bs58.encode(derData);
-  // const kp_b58_privateKey = bs58.encode(kp_raw_privKey);
-  // logger.debug("Keypair BS58", { publicKey: kp_b58_publicKey, privateKey: kp_b58_privateKey });
-  // logger.debug("Wallet BS58", { publicKey: key.publicKeyBase58, fingerprint: bs58.encode(Buffer.from(key.fingerprint)), key: bs58.encode(key.publicKey), prefixedKey: bs58.encode(key.prefixedPublicKey) });
-  
-  /**
-   * end
-   */
+  // const publicDid = await task("Creating Verifier DID...", verifier.dids.create<OracleDidCreateOptions>({
+  //   method: "orcl",
+  //   secret: {
+  //     publicKeyPem: keypair.publicKey,
+  //     },
+  // }));
 
   const { outOfBandRecord, invitationUrl } = await task("Creating invitation...", createNewInvitation(verifier));
 
@@ -335,36 +305,24 @@ const run = async () => {
   });
 
   // Wait for the connection to be established
-  const connection = await task("",connectionEstablished);
+  await connectionEstablished;
 
   // logger.debug("Connection ID:", { connectionId: connection.id });
   // logger.debug("Connection DID:", { connectionDid: connection.did });
 
-  await confirm("Would you like to issue a credential?");
-
-  verifier.proofs.requestProof({
-    connectionId: connection.id,
-    pr: {
-      name: "Proof of Education",
-      requestedAttributes: {
-        "urn:example:attribute:education": {
-          name: "degree",
-          restrictions: [
-            {
-              cred_def_id: "WgWxqztrNooG92RXvxSTWv:3:CL:20:tag",
-            },
-          ],
-        },
-      },
-      requestedPredicates: {},
-    },
+  console.log("Listening for proof changes...");
+  // Create a Promise to resolve when the proof is accepted
+  const proposalAccepted = new Promise<void>((resolve) => {
+    setupProofListener(verifier, () => {
+      console.log(
+        "We now have an active proof to use in the following tutorials"
+      );
+      resolve();
+    });
   });
-  })
-
-  // } finally {
-  //   await verifier.wallet.delete()
-  //   process.exit(0);
-  // }
+  
+  // Wait for the proof to be accepted
+  await proposalAccepted;
 };
 
 export default run;

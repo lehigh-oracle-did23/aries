@@ -19,11 +19,17 @@ import {
   CredentialState,
   ConsoleLogger,
   LogLevel,
-  CredentialExchangeRecord
+  CredentialExchangeRecord,
+  ProofsModule,
+  V2ProofProtocol,
+  JsonTransformer,
+  ConnectionRecord,
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
 import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
+
+import { W3cCredentialService } from "@aries-framework/core/build/modules/vc/W3cCredentialService";
 
 import {
   OracleModule,
@@ -34,6 +40,10 @@ import {
 } from "@lehigh-oracle-did23/aries-framework-oracle";
 import dotenv from "dotenv";
 dotenv.config();
+
+import { JsonLdProofFormatService } from "./jsonld-proofs/JsonLdProofFormatService";
+
+import { JsonPresentation } from "./jsonld-proofs/JsonLdProofFormat";
 
 import readline from "readline";
 
@@ -78,6 +88,13 @@ const initializeHolderAgent = async () => {
         credentialProtocols: [
           new V2CredentialProtocol({
             credentialFormats: [new JsonLdCredentialFormatService()],
+          }),
+        ],
+      }),
+      proofs: new ProofsModule({
+        proofProtocols: [
+          new V2ProofProtocol({
+            proofFormats: [new JsonLdProofFormatService()],
           }),
         ],
       }),
@@ -139,11 +156,12 @@ const setupConnectionListener = (
         console.log(
           `Connection for out-of-band id ${outOfBandRecord.id} completed`
         );
+        console.log(payload.connectionRecord.did);
 
         // Custom business logic can be included here
         // In this example we can send a basic message to the connection, but
         // anything is possible
-        cb();
+        cb(payload.connectionRecord);
 
         // // We exit the flow
         // process.exit(0);
@@ -246,16 +264,63 @@ const run = async () => {
     const credential = (await credentialAccept).credentials;
 
     // Show all credentials
-    await holder.w3cCredentials.getCredentialRecordById(credential[0].credentialRecordId).then((records) => {
-      console.log(records);
+    await holder.w3cCredentials.getCredentialRecordById(credential[0].credentialRecordId).then((record) => {
+      console.log(record);
     });
 
     // Verifier invitation
     const secondInvitationUrl = await askQuestion(rl, "Paste the second invitation URL and press Enter: ");
     console.log("Accepting the second invitation as Holder...");
-    await receiveInvitation(holder, secondInvitationUrl);
+    const outOfBandRecord = await receiveInvitation(holder, secondInvitationUrl);
 
     console.log("Listening for presentation changes...");
+
+    // press enter to send a proof proposal
+
+    console.log("Listening for connection changes...");
+    // Create a Promise to resolve when the connection is established
+    const connectionEstablished = new Promise<ConnectionRecord>((resolve) => {
+      setupConnectionListener(holder, outOfBandRecord, (connection) => {
+        console.log(
+          "We now have an active connection to use in the following tutorials"
+        );
+        resolve(connection); // Resolve the Promise when the connection is established
+      });
+    });
+
+    // Wait for the connection to be established
+    const connection = await connectionEstablished
+    
+    await askQuestion(rl, "Press Enter to send a proof proposal: ");
+
+     const w3cCredentialService =
+        holder.dependencyManager.resolve(W3cCredentialService);
+
+    const credRecord =  await holder.w3cCredentials.getCredentialRecordById(credential[0].credentialRecordId)
+
+    const cred = credRecord.credential
+
+    const presentation = await w3cCredentialService.createPresentation({
+      credentials: cred,
+    });
+
+    const res = await holder.proofs.proposeProof({
+      connectionId: connection.id,
+      protocolVersion: "v2",
+      proofFormats: {
+        jsonld: {
+          presentation: presentation,
+          options: {
+            proofPurpose: "authentication",
+            proofType: "Ed25519Signature2018",
+          },
+        },
+      },
+      comment: "This is a proof proposal",
+    });
+
+    console.log(res);
+
   } finally {
     rl.close();
   }
