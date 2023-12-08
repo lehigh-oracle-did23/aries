@@ -309,8 +309,7 @@ const askQuestion = (rl: readline.Interface, question: string): Promise<string> 
 };
 
 const run = async () => {
-  console.log("Initializing Holder agent...");
-  const holder = await initializeHolderAgent();
+  const holder = await task("Initializing Holder agent...", initializeHolderAgent());
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -319,9 +318,15 @@ const run = async () => {
 
   try {
     // Issuer invitation
-    const invitationUrl = await askQuestion(rl, "Paste the invitation URL and press Enter: ");
-    console.log("Accepting the invitation as Holder...");
-    await receiveInvitation(holder, invitationUrl);
+    // const invitationUrl = await askQuestion(rl, "Paste the invitation URL and press Enter: ");
+    // console.log("Accepting the invitation as Holder...");
+    // await receiveInvitation(holder, invitationUrl);
+    
+    const invitationUrl = await prompt("Paste the invitation URL and press Enter: ")
+    await task(
+      "Accepting the invitation as Holder...",
+      receiveInvitation(holder, invitationUrl)
+    );
 
     console.log("Listening for credential changes...");
     const credentialOffer = new Promise<void>((resolve) => {
@@ -353,9 +358,14 @@ const run = async () => {
     });
 
     // Verifier invitation
-    const secondInvitationUrl = await askQuestion(rl, "Paste the second invitation URL and press Enter: ");
-    console.log("Accepting the second invitation as Holder...");
-    const outOfBandRecord = await receiveInvitation(holder, secondInvitationUrl);
+    // const secondInvitationUrl = await askQuestion(rl, "Paste the second invitation URL and press Enter: ");
+    // console.log("Accepting the second invitation as Holder...");
+    // const outOfBandRecord = await receiveInvitation(holder, secondInvitationUrl);
+
+    const secondInvitationUrl = await prompt(
+      "Paste the second invitation URL and press Enter: "
+    );
+    const outOfBandRecord = await task("Accepting the second invitation as Holder...", receiveInvitation(holder, secondInvitationUrl));
 
     console.log("Listening for presentation changes...");
 
@@ -375,10 +385,11 @@ const run = async () => {
     // Wait for the connection to be established
     const connection = await connectionEstablished
     
-    await askQuestion(rl, "Press Enter to send a proof proposal: ");
+    // await askQuestion(rl, "Press Enter to send a proof proposal: ");
+    
 
-     const w3cCredentialService =
-        holder.dependencyManager.resolve(W3cCredentialService);
+    const w3cCredentialService =
+      holder.dependencyManager.resolve(W3cCredentialService);
 
     const credRecord =  await holder.w3cCredentials.getCredentialRecordById(credential[0].credentialRecordId)
 
@@ -396,7 +407,7 @@ const run = async () => {
     );
 
     const publicDid = await task(
-      "Creating Issuer DID...",
+      "Creating Holder DID...",
       holder.dids.create<OracleDidCreateOptions>({
         method: "orcl",
         secret: {

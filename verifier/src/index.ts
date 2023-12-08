@@ -29,7 +29,8 @@ import {
   LogLevel,
   ProofStateChangedEvent,
   ProofEventTypes,
-  ProofState
+  ProofState,
+  ProofExchangeRecord
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
@@ -226,7 +227,7 @@ const setupProofListener = (agent: Agent, cb: (...args: any) => void) => {
           );
           // For demo purposes we exit the program here.
           // process.exit(0);
-          cb();
+          cb(payload.proofRecord);
           break;
       }
     }
@@ -350,16 +351,18 @@ const run = async () => {
 
   console.log("Listening for proof changes...");
   // Create a Promise to resolve when the proof is accepted
-  const presentationAccepted = new Promise<void>((resolve) => {
-    setupProofListener(verifier, () => {
+  const presentationAccepted = new Promise<ProofExchangeRecord>((resolve) => {
+    setupProofListener(verifier, (presentation) => {
       console.log(
         "Recieved valid presentation"
       );
-      resolve();
+      resolve(presentation);
     });
   });
 
   await presentationAccepted;
+
+  console.log(presentationAccepted);
 };
 
 export default run;
