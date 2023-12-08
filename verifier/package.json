@@ -1,9 +1,13 @@
 {
-  "name": "issuer",
+  "name": "verifier",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "yarn run build && node ./build/index.js",
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,11 +15,23 @@
   "license": "ISC",
   "dependencies": {
     "@aries-framework/askar": "^0.4.0",
-    "@aries-framework/core": "^0.4.0",
+    "@aries-framework/core": "^0.4.2",
     "@aries-framework/node": "^0.4.0",
-    "@ariesframework/oracle": "./src/services/oracle",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
+    "@lehigh-oracle-did23/aries-framework-oracle": "^1.0.3-alpha.2",
+    "@types/node": "^20.9.2",
     "axios": "^1.6.0",
-    "dotenv": "^16.3.1"
+    "bs58": "^5.0.0",
+    "dotenv": "^16.3.1",
+    "inquirer": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "ora": "^5.4.1",
+    "tsyringe": "^4.8.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/uuid": "^9.0.1",
+    "@types/inquirer": "^8.0.0"
   }
 }

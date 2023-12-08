@@ -63,7 +63,7 @@ const initializeIssuerAgent = async () => {
       id: "mainIssuer",
       key: "demoagentissuer00000000000000000000",
     },
-    // logger: new ConsoleLogger(LogLevel.info),
+    logger: new ConsoleLogger(LogLevel.info),
     endpoints: ["http://localhost:3002"],
   };
 

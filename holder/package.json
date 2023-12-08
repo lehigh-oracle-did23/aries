@@ -19,6 +19,12 @@
     "@aries-framework/node": "^0.4.0",
     "@lehigh-oracle-did23/aries-framework-oracle": "^1.0.3-alpha.0",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
+    "ora": "^5.4.1",
+    "inquirer": "^8.0.0",
+    "tsyringe": "^4.8.0",
     "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.0.0"
   }
 }
