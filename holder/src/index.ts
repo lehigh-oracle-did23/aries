@@ -24,10 +24,19 @@ import {
   V2ProofProtocol,
   JsonTransformer,
   ConnectionRecord,
+  Buffer,
+  ProofStateChangedEvent,
+  ProofEventTypes,
+  ProofState,
+  KeyType,
 } from "@aries-framework/core";
 import { W3cJsonLdCredentialService } from "@aries-framework/core/build/modules/vc/data-integrity/W3cJsonLdCredentialService";
 import { agentDependencies, HttpInboundTransport } from "@aries-framework/node";
 import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
+
+import task from "./util/task";
+import prompt from "./util/prompt";
+import confirm from "./util/confirm";
 
 import { W3cCredentialService } from "@aries-framework/core/build/modules/vc/W3cCredentialService";
 
@@ -37,7 +46,11 @@ import {
   OracleLedgerService,
   OracleDidResolver,
   OracleDidRegistrar,
+  OracleDidCreateOptions,
 } from "@lehigh-oracle-did23/aries-framework-oracle";
+
+import crypto from "crypto";
+
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -134,6 +147,53 @@ const createLegacyInvitation = async (agent: Agent) => {
   return invitation.toUrl({ domain: "https://example.org" });
 };
 
+const generateKey = async () => {
+  const keypair = crypto.generateKeyPairSync("ed25519", {
+    publicKeyEncoding: {
+      type: "spki",
+      format: "pem",
+    },
+    privateKeyEncoding: {
+      type: "pkcs8",
+      format: "der",
+    },
+  });
+
+  return keypair;
+};
+
+// determine the length of a DER-encoded ASN.1 element
+function findDer(data: Uint8Array, index: number, tagByte: number) {
+  while (true) {
+    if (data.length < 2) throw Error("unexpected EOF");
+    const [tag, length] = data;
+    data = data.subarray(2);
+    if ((tag & 31) === 31 || length >> 7) throw Error("not implemented");
+    if (data.length < length) throw Error("unexpected EOF");
+    if (index-- === 0) {
+      if (tag !== tagByte) throw Error(`unexpected tag ${tag}`);
+      return data.subarray(0, length);
+    }
+    data = data.subarray(length);
+  }
+}
+
+function stripKeyToRaw(
+  keypair: crypto.KeyPairSyncResult<string, globalThis.Buffer>
+): Buffer {
+  /**
+   * HACK - start: removes the ASN.1 wrapper from the private key and extract the raw key
+   */
+  let kp_raw_privKey = Buffer.from(keypair.privateKey);
+  kp_raw_privKey = Buffer.from(findDer(kp_raw_privKey, 0, (1 << 5) | 16)); // SEQUENCE (PrivateKeyInfo)
+  kp_raw_privKey = Buffer.from(findDer(kp_raw_privKey, 2, 4)); // OCTET STRING (PrivateKey)
+  kp_raw_privKey = Buffer.from(findDer(kp_raw_privKey, 0, 4)); // OCTET STRING (CurvePrivateKey)
+  /**
+   * end
+   */
+  return kp_raw_privKey;
+}
+
 const receiveInvitation = async (agent: Agent, invitationUrl: string) => {
   const { outOfBandRecord } = await agent.oob.receiveInvitationFromUrl(
     invitationUrl
@@ -210,6 +270,30 @@ const setupCredentialRequestListener = (agent: Agent, cb: (...args: any) => void
           );
           // For demo purposes we exit the program here.
           cb(payload.credentialRecord);
+          break;
+      }
+    }
+  );
+};
+
+const setupProofListener = (agent: Agent, cb: (...args: any) => void) => {
+  agent.events.on<ProofStateChangedEvent>(
+    ProofEventTypes.ProofStateChanged,
+    async ({ payload }) => {
+      switch (payload.proofRecord.state) {
+        case ProofState.RequestReceived:
+          console.log("received a proof request");
+          // custom logic here
+          await agent.proofs.acceptRequest({
+            proofRecordId: payload.proofRecord.id,
+          });
+        case ProofState.Done:
+          console.log(
+            `Proof for proof id ${payload.proofRecord.id} is accepted`
+          );
+          // For demo purposes we exit the program here.
+          // process.exit(0);
+          cb();
           break;
       }
     }
@@ -300,8 +384,31 @@ const run = async () => {
 
     const cred = credRecord.credential
 
+    const keypair = await generateKey();
+    const kp_raw_privKey = stripKeyToRaw(keypair);
+
+    await task(
+      "Creating Holder key...",
+      holder.wallet.createKey({
+        privateKey: kp_raw_privKey,
+        keyType: KeyType.Ed25519,
+      })
+    );
+
+    const publicDid = await task(
+      "Creating Issuer DID...",
+      holder.dids.create<OracleDidCreateOptions>({
+        method: "orcl",
+        secret: {
+          publicKeyPem: keypair.publicKey,
+        },
+      })
+    );
+
+
     const presentation = await w3cCredentialService.createPresentation({
-      credentials: cred,
+      credentials: [cred],
+      holder: publicDid.didState.did
     });
 
     const res = await holder.proofs.proposeProof({
@@ -313,13 +420,27 @@ const run = async () => {
           options: {
             proofPurpose: "authentication",
             proofType: "Ed25519Signature2018",
+            challenge: "12345678901234567890123456789012",
           },
         },
       },
       comment: "This is a proof proposal",
     });
 
-    console.log(res);
+    await res;
+
+    console.log("Listening for proof requests...");
+    const proofRequest = new Promise<void>((resolve) => {
+        setupProofListener(holder, (credential) => {
+          console.log(
+            "Proof request accepted"
+          );
+          resolve();
+        });
+      }
+    );
+
+    await proofRequest;
 
   } finally {
     rl.close();

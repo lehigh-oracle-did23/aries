@@ -182,7 +182,7 @@ const setupConnectionListener = (
   );
 };
 
-const setupProofListener = (
+const setupProofProposalListener = (
   agent: Agent,
   cb: (...args: any) => void
 ) => {
@@ -194,6 +194,30 @@ const setupProofListener = (
           console.log("received a proof request");
           // custom logic here
           await agent.proofs.acceptProposal({
+            proofRecordId: payload.proofRecord.id,
+          });
+        case ProofState.Done:
+          console.log(
+            `Proof for proof id ${payload.proofRecord.id} is accepted`
+          );
+          // For demo purposes we exit the program here.
+          // process.exit(0);
+          cb();
+          break;
+      }
+    }
+  );
+};
+
+const setupProofListener = (agent: Agent, cb: (...args: any) => void) => {
+  agent.events.on<ProofStateChangedEvent>(
+    ProofEventTypes.ProofStateChanged,
+    async ({ payload }) => {
+      switch (payload.proofRecord.state) {
+        case ProofState.PresentationReceived:
+          console.log("received a proof request");
+          // custom logic here
+          await agent.proofs.acceptPresentation({
             proofRecordId: payload.proofRecord.id,
           });
         case ProofState.Done:
@@ -313,9 +337,9 @@ const run = async () => {
   console.log("Listening for proof changes...");
   // Create a Promise to resolve when the proof is accepted
   const proposalAccepted = new Promise<void>((resolve) => {
-    setupProofListener(verifier, () => {
+    setupProofProposalListener(verifier, () => {
       console.log(
-        "We now have an active proof to use in the following tutorials"
+        "Recieved valid proof proposal"
       );
       resolve();
     });
@@ -323,6 +347,19 @@ const run = async () => {
   
   // Wait for the proof to be accepted
   await proposalAccepted;
+
+  console.log("Listening for proof changes...");
+  // Create a Promise to resolve when the proof is accepted
+  const presentationAccepted = new Promise<void>((resolve) => {
+    setupProofListener(verifier, () => {
+      console.log(
+        "Recieved valid presentation"
+      );
+      resolve();
+    });
+  });
+
+  await presentationAccepted;
 };
 
 export default run;

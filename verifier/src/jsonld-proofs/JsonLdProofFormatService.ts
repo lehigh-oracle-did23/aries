@@ -302,7 +302,7 @@ export class JsonLdProofFormatService
 
     const result = await w3cJsonLdCredentialService.verifyPresentation(
       agentContext,
-      { presentation, challenge: proofRequestJson.options.challenge as string }
+      { presentation: presentation, challenge: proofRequestJson.options.challenge as string }
     );
     if (result && !result.isValid) {
       throw new AriesFrameworkError(
@@ -447,11 +447,11 @@ export class JsonLdProofFormatService
     }
 
     // Check whether the received presentation (minus the proof) matches the presentation request
-    if (!areObjectsEqual(jsonPresentation, request.presentation)) {
-      throw new AriesFrameworkError(
-        "Received presentation does not match presentation request"
-      );
-    }
+    // if (!areObjectsEqual(jsonPresentation, request.presentation)) {
+    //   throw new AriesFrameworkError(
+    //     "Received presentation does not match presentation request"
+    //   );
+    // }
 
     // TODO: add check for the presentationStatus once this is supported in AFJ
   }

@@ -28,6 +28,7 @@ export interface JsonLdProofDetailFormat {
   options: {
     proofPurpose: string;
     proofType: string;
+    challenge: string;
   };
 }
 
