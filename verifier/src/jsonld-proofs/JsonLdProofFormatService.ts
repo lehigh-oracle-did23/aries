@@ -6,7 +6,7 @@ import type {
 } from "./JsonLdProofFormat";
 import { JsonLdProofDetail } from "./JsonLdProofDetail";
 import {
-    ClaimFormat,
+  ClaimFormat,
   W3cJsonLdVerifiableCredential,
   W3cPresentation,
   W3cVerifiableCredential,
@@ -59,11 +59,24 @@ const JSONLD_PRESENTATION = "aries/ld-proof-vp@v1.0";
 
 // TASK: Make functions that check that the claims asked are the claims provided
 
+/**
+ * Service for handling JSON-LD proof formats.
+ */
 export class JsonLdProofFormatService
   implements ProofFormatService<JsonLdProofFormat>
 {
+  /**
+   * The key identifier for the JSON-LD proof format.
+   */
   public readonly formatKey = "jsonld" as const;
 
+  /**
+   * Creates a proposal for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for creating the proposal.
+   * @returns A promise that resolves to the created proposal.
+   * @throws Error if the jsonld format is missing.
+   */
   public async createProposal(
     agentContext: AgentContext,
     {
@@ -89,6 +102,12 @@ export class JsonLdProofFormatService
     return { attachment, format };
   }
 
+  /**
+   * Processes a proposal for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for processing the proposal.
+   * @returns A promise that resolves when the proposal is processed.
+   */
   public async processProposal(
     agentContext: AgentContext,
     { attachment }: ProofFormatProcessOptions
@@ -100,6 +119,13 @@ export class JsonLdProofFormatService
     JsonTransformer.fromJSON(proposalJson, JsonLdProofDetail);
   }
 
+  /**
+   * Accepts a proposal for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for accepting the proposal.
+   * @returns A promise that resolves to the accepted proposal.
+   * @throws AriesFrameworkError if the verification method is missing in the proof data.
+   */
   public async acceptProposal(
     agentContext: AgentContext,
     {
@@ -127,6 +153,13 @@ export class JsonLdProofFormatService
     return { attachment, format };
   }
 
+  /**
+   * Creates a request for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for creating the request.
+   * @returns A promise that resolves to the created request.
+   * @throws Error if the jsonld format is missing.
+   */
   public async createRequest(
     agentContext: AgentContext,
     {
@@ -152,6 +185,12 @@ export class JsonLdProofFormatService
     return { attachment, format };
   }
 
+  /**
+   * Processes a request for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for processing the request.
+   * @returns A promise that resolves when the request is processed.
+   */
   public async processRequest(
     agentContext: AgentContext,
     { attachment }: ProofFormatProcessOptions
@@ -162,6 +201,13 @@ export class JsonLdProofFormatService
     JsonTransformer.fromJSON(requestJson, JsonLdCredentialDetail);
   }
 
+  /**
+   * Accepts a request for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for accepting the request.
+   * @returns A promise that resolves to the accepted request.
+   * @throws AriesFrameworkError if the verification method is missing in the proof data.
+   */
   public async acceptRequest(
     agentContext: AgentContext,
     {
@@ -219,9 +265,12 @@ export class JsonLdProofFormatService
   }
 
   /**
-   * Derive a verification method using the holder from the given verifiable presentation
-   * @param credentialAsJson the verifiable presentation we want to sign
-   * @return the verification method derived from this presentation and its associated issuer did, keys etc.
+   * Derives a verification method using the holder from the given verifiable presentation.
+   * @param agentContext The agent context.
+   * @param presentationAsJson The verifiable presentation as JSON.
+   * @param presentationRequest The presentation request.
+   * @returns A promise that resolves to the derived verification method.
+   * @throws AriesFrameworkError if the holder did is invalid or if no key type is found for the proof type.
    */
   private async deriveVerificationMethod(
     agentContext: AgentContext,
@@ -279,6 +328,13 @@ export class JsonLdProofFormatService
     return verificationMethod.id;
   }
 
+  /**
+   * Processes a presentation for the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for processing the presentation.
+   * @returns A promise that resolves to a boolean indicating if the presentation is valid.
+   * @throws AriesFrameworkError if the presentation fails to validate.
+   */
   public async processPresentation(
     agentContext: AgentContext,
     { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
@@ -302,7 +358,10 @@ export class JsonLdProofFormatService
 
     const result = await w3cJsonLdCredentialService.verifyPresentation(
       agentContext,
-      { presentation: presentation, challenge: proofRequestJson.options.challenge as string }
+      {
+        presentation: presentation,
+        challenge: proofRequestJson.options.challenge as string,
+      }
     );
     if (result && !result.isValid) {
       throw new AriesFrameworkError(
@@ -313,6 +372,12 @@ export class JsonLdProofFormatService
     return result.isValid;
   }
 
+  /**
+   * Retrieves the credentials for a request in the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for retrieving the credentials.
+   * @returns A promise that resolves to the credentials for the request.
+   */
   public async getCredentialsForRequest(
     agentContext: AgentContext,
     {
@@ -331,6 +396,12 @@ export class JsonLdProofFormatService
     return credentialsForRequest;
   }
 
+  /**
+   * Selects the credentials for a request in the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for selecting the credentials.
+   * @returns A promise that resolves to the selected credentials for the request.
+   */
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
     {
@@ -341,15 +412,20 @@ export class JsonLdProofFormatService
     const proofRequestJson =
       requestAttachment.getDataAsJson<JsonLdFormatDataProofDetail>();
 
-
     const selectedCredentials = this._selectCredentialsForRequest(
       agentContext,
-      proofRequestJson,
+      proofRequestJson
     );
 
     return selectedCredentials;
   }
 
+  /**
+   * Determines if the service should auto respond to a proposal in the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for auto responding to the proposal.
+   * @returns A promise that resolves to a boolean indicating if the service should auto respond.
+   */
   public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
     {
@@ -365,6 +441,12 @@ export class JsonLdProofFormatService
     return true; // TODO: needs to obviously not be hardcoded, look at AnonCreds
   }
 
+  /**
+   * Determines if the service should auto respond to a request in the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for auto responding to the request.
+   * @returns A promise that resolves to a boolean indicating if the service should auto respond.
+   */
   public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
     {
@@ -380,6 +462,12 @@ export class JsonLdProofFormatService
     return true; // TODO: needs to obviously not be hardcoded, look at AnonCreds
   }
 
+  /**
+   * Determines if the service should auto respond to a presentation in the JSON-LD proof format.
+   * @param agentContext The agent context.
+   * @param options The options for auto responding to the presentation.
+   * @returns A promise that resolves to a boolean indicating if the service should auto respond.
+   */
   public async shouldAutoRespondToPresentation(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _agentContext: AgentContext,
@@ -391,15 +479,26 @@ export class JsonLdProofFormatService
     return true;
   }
 
+  /**
+   * Determines if the service supports the given format identifier.
+   * @param formatIdentifier The format identifier.
+   * @returns A boolean indicating if the service supports the format.
+   */
   public supportsFormat(formatIdentifier: string): boolean {
     const supportedFormats = [
-        JSONLD_PRESENTATION_PROPOSAL,
-        JSONLD_PRESENTATION_REQUEST,
-        JSONLD_PRESENTATION,
+      JSONLD_PRESENTATION_PROPOSAL,
+      JSONLD_PRESENTATION_REQUEST,
+      JSONLD_PRESENTATION,
     ];
     return supportedFormats.includes(formatIdentifier);
   }
 
+  /**
+   * Verifies that the received presentation matches the request.
+   * @param presentation The received presentation.
+   * @param request The request.
+   * @throws AriesFrameworkError if the presentation proof arrays are not supported or if the presentation proof created timestamp does not match the request.
+   */
   private verifyReceivedPresentationMatchesRequest(
     presentation: W3cJsonLdVerifiablePresentation,
     request: JsonLdFormatDataProofDetail
@@ -483,24 +582,25 @@ export class JsonLdProofFormatService
     return w3cVerifiableCredentials;
   }
 
-private async _selectCredentialsForRequest(
+  private async _selectCredentialsForRequest(
     agentContext: AgentContext,
-    proofRequestJson: JsonLdFormatDataProofDetail,
-): Promise<ProofFormatSelectCredentialsForRequestReturn<JsonLdProofFormat>> {
+    proofRequestJson: JsonLdFormatDataProofDetail
+  ): Promise<ProofFormatSelectCredentialsForRequestReturn<JsonLdProofFormat>> {
     const w3cCredentialService =
-        agentContext.dependencyManager.resolve(W3cCredentialService);
+      agentContext.dependencyManager.resolve(W3cCredentialService);
     const credentials = await this._getCredentialsForRequest(
-        agentContext,
-        proofRequestJson
+      agentContext,
+      proofRequestJson
     );
 
-    const verifiablePresentation = await w3cCredentialService.createPresentation({
+    const verifiablePresentation =
+      (await w3cCredentialService.createPresentation({
         credentials: credentials,
         holder: proofRequestJson.presentation.holder as string,
-    }) as W3cJsonLdVerifiablePresentation | W3cJwtVerifiablePresentation;
+      })) as W3cJsonLdVerifiablePresentation | W3cJwtVerifiablePresentation;
 
     return verifiablePresentation;
-}
+  }
 
   /**
    * Returns an object of type {@link Attachment} for use in credential exchange messages.
